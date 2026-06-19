@@ -11,18 +11,23 @@ Java Wordle Dupe
 Command Contract
 Every implementation must support the same commands, arguments, output format, error format, validation rules, and exit codes.
 
-Commands
-Command	Purpose
-register <player-name>	Create a player.
-new-game	Choose a new secret word and clear previous guesses.
-guess <player-name> <word>	Submit a guess and display the Wordle board.
-leaderboard [--by-games]	Show players by accuracy or games completed.
-Exit Codes
-Exit Code	Meaning
-0	Command completed successfully.
-1	Command failed because of invalid input or game-rule validation.
-2	Command failed because of incorrect command usage.
-3	Command failed because of an unexpected application error.
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| `register <player-name>` | Create a player. |
+| `new-game` | Choose a new secret word and clear previous guesses. |
+| `guess <player-name> <word>` | Submit a guess and display the Wordle board. |
+| `leaderboard [--by-games]` | Show players by accuracy or games completed. |
+
+## Exit Codes
+
+| Exit Code | Meaning |
+|-----------|---------|
+| 0 | Command completed successfully. |
+| 1 | Command failed because of invalid input or game-rule validation. |
+| 2 | Command failed because of incorrect command usage. |
+| 3 | Command failed because of an unexpected application error. |
 Output Rules
 Successful commands write to standard output.
 
