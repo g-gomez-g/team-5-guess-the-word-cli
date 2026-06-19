@@ -8,6 +8,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.regex.Pattern;
+
+import javax.management.openmbean.ArrayType;
+
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.io.IOException;
@@ -19,6 +22,9 @@ public class wurdal {
     private static final int BOARD_ROWS = 6;
     private static final String CELL_BORDER = "*****";
     private static final String CELL_EMPTY = "*   *";
+    private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_YELLOW = "\u001B[33m";
 
     public String currentInput = "";
     public Map<String, String> playerHiddenWords = new HashMap<>();
@@ -26,6 +32,7 @@ public class wurdal {
     public Set<String> currentSeenWords = new HashSet<String>() {};
     public Set<String> currentGames = new HashSet<String>(){};
     public List<String> wordDictionary = new ArrayList<String>(){};
+    public List<String> guessableWords = new ArrayList<String>(){};
     public List<LeaderboardEntry> leaderboard = new ArrayList<LeaderboardEntry>(){};
     public CommandLineParser parser = new CommandLineParser(){};
     public Random random = new Random();
@@ -36,6 +43,7 @@ public class wurdal {
         loadPlayersFromFile();
         loadGamesFromFile();
         loadWordDictionary();
+        loadGuessableWords();
     }
 
     private void loadWordDictionary() {
@@ -48,11 +56,10 @@ public class wurdal {
                         wordDictionary.add(word);
                     }
                 }
-            }
-            if (wordDictionary.isEmpty()) {
-                System.err.println("Word dictionary is empty or missing at word_bank/wordle_dict.txt");
-            }
-            else {
+                if (wordDictionary.isEmpty()) {
+                    System.err.println("Word dictionary is empty or missing at word_bank/wordle_dict.txt");
+                }
+            }else{
                 Files.createDirectories(Paths.get("word_bank"));
                 Files.createFile(Paths.get("word_bank/wordle_dict.txt"));
             }
@@ -61,19 +68,41 @@ public class wurdal {
         }
     }
 
+    private void loadGuessableWords() {
+        try {
+            if (Files.exists(Paths.get("word_bank/valid_words.txt"))) {
+                List<String> lines = Files.readAllLines(Paths.get("word_bank/valid_words.txt"));
+                for (String line : lines) {
+                    String word = line.trim().toLowerCase();
+                    if (!word.isEmpty()) {
+                        guessableWords.add(word);
+                    }
+                }
+                if (guessableWords.isEmpty()) {
+                    System.err.println("Guessable word bank is empty or missing at word_bank/valid_words.txt");
+                }
+            }else{
+                Files.createDirectories(Paths.get("word_bank"));
+                Files.createFile(Paths.get("word_bank/valid_words.txt"));
+            }
+        } catch (IOException e) {
+            System.err.println("Error loading valid_words.txt: " + e.getMessage());
+        }
+    }
+
     private String chooseRandomWord() {
-        if (wordDictionary.isEmpty()) {
+        if (guessableWords.isEmpty()) {
             throw new IllegalStateException("No words available in dictionary");
         }
 
-        if (currentSeenWords.size() >= wordDictionary.size()) {
+        if (currentSeenWords.size() >= guessableWords.size()) {
             currentSeenWords.clear();
         }
 
         String chosenWord;
         do {
-            chosenWord = wordDictionary.get(random.nextInt(wordDictionary.size()));
-        } while (currentSeenWords.contains(chosenWord) && currentSeenWords.size() < wordDictionary.size());
+            chosenWord = guessableWords.get(random.nextInt(guessableWords.size()));
+        } while (currentSeenWords.contains(chosenWord) && currentSeenWords.size() < guessableWords.size());
 
         currentSeenWords.add(chosenWord);
         return chosenWord;
@@ -84,9 +113,26 @@ public class wurdal {
             if (Files.exists(Paths.get("game_state/players.txt"))) {
                 List<String> lines = Files.readAllLines(Paths.get("game_state/players.txt"));
                 for (String line : lines) {
-                    String playerName = line.trim();
-                    if (!playerName.isEmpty()) {
-                        leaderboard.add(new LeaderboardEntry(playerName, new ArrayList<Integer>()));
+                    String trimmedLine = line.trim();
+                    if (!trimmedLine.isEmpty()) {
+                        String[] parts = trimmedLine.split(",");
+                        String playerName = parts[0].trim();
+                        ArrayList<Integer> games = new ArrayList<Integer>();
+
+                        for (int i = 1; i < parts.length; i++) {
+                            String gameValue = parts[i].trim();
+                            if (!gameValue.isEmpty()) {
+                                try {
+                                    games.add(Integer.parseInt(gameValue));
+                                } catch (NumberFormatException e) {
+                                    System.err.println("Skipping invalid game value for player " + playerName + ": " + gameValue);
+                                }
+                            }
+                        }
+
+                        if (!playerName.isEmpty()) {
+                            leaderboard.add(new LeaderboardEntry(playerName, games));
+                        }
                     }
                 }
                 System.out.println("Loaded " + leaderboard.size() + " registered players.");
@@ -137,9 +183,14 @@ public class wurdal {
 
     private void savePlayersToFile() {
         try {
-            List<String> playerNames = new ArrayList<>();
+            List<String> playerNames = new ArrayList<String>();
             for (LeaderboardEntry entry : leaderboard) {
-                playerNames.add(entry.name());
+                StringJoiner joiner = new StringJoiner(",");
+                joiner.add(entry.name());
+                for (Integer guessesForGame : entry.games()) {
+                    joiner.add(String.valueOf(guessesForGame));
+                }
+                playerNames.add(joiner.toString());
             }
             Files.write(Paths.get("game_state/players.txt"), playerNames);
         } catch (IOException e) {
@@ -171,7 +222,6 @@ public class wurdal {
         }
 
         List<LeaderboardEntry> sortedLeaderboard = new ArrayList<>(leaderboard);
-        
         if (byGames) {
             sortedLeaderboard.sort((a, b) -> Integer.compare(b.games().size(), a.games().size()));
         } else {
@@ -187,6 +237,15 @@ public class wurdal {
                 rank, entry.name(), numGames, gameWord, avgGuesses));
             rank++;
         }
+    }
+
+    private int getLeaderboardIndexByPlayerName(String playerName) {
+        for (int i = 0; i < leaderboard.size(); i++) {
+            if (leaderboard.get(i).name().equals(playerName)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private void printNewGameBoard(int wordLength) {
@@ -214,11 +273,60 @@ public class wurdal {
         return joiner.toString();
     }
 
-    private String buildCellWithLetter(char letter) {
-        return "* " + letter + " *";
+    private String buildColoredCell(char letter, String ansiColor) {
+        return ansiColor + "* " + letter + " *" + ANSI_RESET;
     }
 
-    private void printBoardWithGuesses(int wordLength, List<String> guesses) {
+    private String[] evaluateGuessColors(String hiddenWord, String guess) {
+        String normalizedHiddenWord = hiddenWord.toLowerCase();
+        String normalizedGuess = guess.toLowerCase();
+        String[] colorCodes = new String[DEFAULT_WORD_LENGTH];
+        int[] letterCounts = new int[26];
+
+        for (int i = 0; i < normalizedHiddenWord.length(); i++) {
+            char hiddenLetter = normalizedHiddenWord.charAt(i);
+            if (hiddenLetter >= 'a' && hiddenLetter <= 'z') {
+                letterCounts[hiddenLetter - 'a']++;
+            }
+        }
+
+        for (int i = 0; i < DEFAULT_WORD_LENGTH; i++) {
+            if (i >= normalizedGuess.length()) {
+                colorCodes[i] = ANSI_RESET;
+                continue;
+            }
+
+            char guessLetter = normalizedGuess.charAt(i);
+            if (i < normalizedHiddenWord.length() && guessLetter == normalizedHiddenWord.charAt(i)) {
+                colorCodes[i] = ANSI_GREEN;
+                if (guessLetter >= 'a' && guessLetter <= 'z') {
+                    letterCounts[guessLetter - 'a']--;
+                }
+            } else {
+                colorCodes[i] = ANSI_RESET;
+            }
+        }
+
+        for (int i = 0; i < DEFAULT_WORD_LENGTH; i++) {
+            if (i >= normalizedGuess.length()) {
+                continue;
+            }
+
+            if (ANSI_GREEN.equals(colorCodes[i])) {
+                continue;
+            }
+
+            char guessLetter = normalizedGuess.charAt(i);
+            if (guessLetter >= 'a' && guessLetter <= 'z' && letterCounts[guessLetter - 'a'] > 0) {
+                colorCodes[i] = ANSI_YELLOW;
+                letterCounts[guessLetter - 'a']--;
+            }
+        }
+
+        return colorCodes;
+    }
+
+    private void printBoardWithGuesses(int wordLength, String hiddenWord, List<String> guesses) {
         System.out.println("📋 Game Board");
         System.out.println();
 
@@ -230,10 +338,11 @@ public class wurdal {
             
             if (row < guessList.size()) {
                 String guess = guessList.get(row);
+                String[] colorCodes = evaluateGuessColors(hiddenWord, guess);
                 StringJoiner guessRow = new StringJoiner("  ");
                 for (int col = 0; col < wordLength; col++) {
                     if (col < guess.length()) {
-                        guessRow.add(buildCellWithLetter(guess.charAt(col)));
+                        guessRow.add(buildColoredCell(guess.charAt(col), colorCodes[col]));
                     } else {
                         guessRow.add(CELL_EMPTY);
                     }
@@ -308,7 +417,7 @@ public class wurdal {
                 System.exit(1);
             }
             // Check if the guess is the word length
-            if (input.length() != DEFAULT_WORD_LENGTH){
+            if (input.length() != DEFAULT_WORD_LENGTH || !wordDictionary.contains(input)){
                 // Check if input is empty
                 System.err.println("Invalid guess [%s]".formatted(input));
                 System.exit(1);
@@ -319,13 +428,30 @@ public class wurdal {
                 System.err.println("Player has already guessed [%s]".formatted(input));
                 System.exit(1);
             }
-            // Check if the player has correctly guessed the word
-            if (input.equals(playerHiddenWords.get(playerName))){
-                var currNumOfGuesses = playerGuesses.get(playerName).stream().count();
-                System.out.println("player [%s] guessed the word in [%d] guesses".formatted(playerName,currNumOfGuesses+1));
-            }
             // Regardless if they got it or not save the guess
             playerGuesses.get(playerName).add(input);
+
+            // Print the board
+            printBoardWithGuesses(DEFAULT_WORD_LENGTH, playerHiddenWords.get(playerName), playerGuesses.get(playerName));
+            // Check if the player has correctly guessed the word / or has reached max attempts
+            var correctlyGuessed = input.equals(playerHiddenWords.get(playerName));
+            var outOfGuesses = playerGuesses.get(playerName).stream().count() >= BOARD_ROWS;
+            if (correctlyGuessed || outOfGuesses){
+                var currNumOfGuesses = playerGuesses.get(playerName).stream().count();
+                if (correctlyGuessed){
+                    System.out.println("player [%s] guessed the word in [%d] guesses".formatted(playerName,currNumOfGuesses));
+                }
+                else{
+                    System.out.println("player [%s] DID NOT guess the word [%s]".formatted(playerName,playerHiddenWords.get(playerName)));
+                }
+                int leaderboardIdx = getLeaderboardIndexByPlayerName(playerName);
+                ArrayList<Integer> currGames = leaderboard.get(leaderboardIdx).games();
+                // Add New additional game
+                Integer newGame = (int) (input.equals(playerHiddenWords.get(playerName)) ? currNumOfGuesses : -1); 
+                currGames.add(newGame);
+                leaderboard.set(leaderboardIdx,new LeaderboardEntry(playerName,currGames));
+                savePlayersToFile();
+            }
         }
 
         private void validPlayerHandler(String input, String fullCommand){
@@ -383,7 +509,6 @@ public class wurdal {
             String guessWord = normInput[2].strip();
             guessHandler(guessWord, playerName, String.join(" ", normInput));
             saveGamesToFile();
-            printBoardWithGuesses(DEFAULT_WORD_LENGTH, playerGuesses.get(playerName));
         }
 
         private void handleLeaderboard(String[] normInput) {

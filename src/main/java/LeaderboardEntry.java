@@ -5,7 +5,13 @@ import java.util.ArrayList;
 public record LeaderboardEntry(String name, ArrayList<Integer> games) {
 
     public Double getAvgGuesses(){
-        // Count number of games that are true and divide by total number of games 
-        return (double) this.games.stream().mapToInt(Integer::intValue).average().orElse(0.0);
+        // Division by zero logic
+        if(this.games.stream().count() == 0){
+            return 0.0;
+        }
+        var validGames = this.games.stream().filter((game) -> game > 0).reduce(0, Integer::sum);
+        var totalGames = this.games.stream().count(); 
+        // Count number of games that are true and divide by total number of games
+        return (double) validGames / totalGames;
     }
 }
