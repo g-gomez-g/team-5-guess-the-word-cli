@@ -18,10 +18,12 @@ public class wurdal {
     static final int DEFAULT_WORD_LENGTH = 5;
     static final int BOARD_ROWS = 6;
     private static final String CELL_BORDER = "*****";
-    private static final String CELL_EMPTY = "*   *";
     private static final String ANSI_RESET = "\u001B[0m";
+    private static final String ANSI_BLUE = "\u001B[34m";
+    private static final String ANSI_ORANGE = "\u001B[38;5;208m";
     private static final String ANSI_GREEN = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
+    private static final String CELL_EMPTY = ANSI_ORANGE + "*   *" + ANSI_RESET;
 
     public String currentInput = "";
     public Map<String, String> playerHiddenWords = new HashMap<>();
@@ -252,9 +254,9 @@ public class wurdal {
         String middleRow = buildRow(wordLength, CELL_EMPTY);
 
         for (int row = 0; row < BOARD_ROWS; row++) {
-            System.out.println(topBottomRow);
-            System.out.println(middleRow);
-            System.out.println(topBottomRow);
+            System.out.println(ANSI_BLUE + topBottomRow + ANSI_RESET);
+            System.out.println(ANSI_ORANGE + middleRow + ANSI_RESET);
+            System.out.println(ANSI_BLUE + topBottomRow + ANSI_RESET);
             if (row < BOARD_ROWS - 1) {
                 System.out.println();
             }
@@ -330,7 +332,7 @@ public class wurdal {
         List<String> guessList = new ArrayList<>(guesses);
         
         for (int row = 0; row < BOARD_ROWS; row++) {
-            System.out.println(topBottomRow);
+            System.out.println(ANSI_BLUE + topBottomRow + ANSI_RESET);
             
             if (row < guessList.size()) {
                 String guess = guessList.get(row);
@@ -348,7 +350,7 @@ public class wurdal {
                 System.out.println(buildRow(wordLength, CELL_EMPTY));
             }
             
-            System.out.println(topBottomRow);
+            System.out.println(ANSI_BLUE + topBottomRow + ANSI_RESET);
             if (row < BOARD_ROWS - 1) {
                 System.out.println();
             }
