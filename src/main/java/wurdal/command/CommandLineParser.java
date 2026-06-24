@@ -142,9 +142,16 @@ public class CommandLineParser {
         validPlayerHandler(game, playerName, String.join(" ", normInput));
         boolean playerExists = game.leaderboard.stream().anyMatch(entry -> entry.name().equals(playerName));
         if (!playerExists) {
-            System.err.println("Player not registered: " + playerName);
+            System.err.println("Error: player not found");
             System.exit(1);
         }
+
+        if (game.playerHiddenWords.getOrDefault("playerName",null) != null){
+            System.err.println("Error: game in progress");
+            System.exit(1);
+        }
+
+        if (game.player)
 
         game.playerHiddenWords.put(playerName, game.chooseRandomWord());
         game.playerGuesses.put(playerName, new ArrayList<>());
