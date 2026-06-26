@@ -12,9 +12,9 @@ public class Player {
     private Integer id;
 
     private String name;
-    private int gamesWon = 0;
-    private Integer gameId;
-    private boolean isInGame;
+    private Integer gamesWon = 0;
+    private Integer gameId = null;
+    private Boolean isInGame = false;
 
     public Integer getId() {
         return this.id;

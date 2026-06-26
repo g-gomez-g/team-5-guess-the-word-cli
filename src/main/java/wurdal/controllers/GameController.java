@@ -17,8 +17,8 @@ public record GameController(PlayerRepository playerRepo, GameRepository gameRep
     //[CREATE]
     @PostMapping(value="/register")
     public ResponseEntity<Player> register(@RequestBody Player player) {
-        playerRepo.save(player);
-        return ResponseEntity.ok(player);
+        Player saved = playerRepo.save(player);
+        return ResponseEntity.ok(saved);
     }
 
     //    public void printNewGameBoard(int wordLength)
