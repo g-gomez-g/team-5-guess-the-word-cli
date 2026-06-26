@@ -10,6 +10,6 @@ import wurdal.structures.Game;
 public interface GameRepository extends JpaRepository<Game, Integer> {
     @Query(value= """
     select * from games where player_id=:id order by id limit 1
-""")
+""", nativeQuery = true)
     public Game getByPlayerId(@Param("id") int id);
 }
