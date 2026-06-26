@@ -3,3 +3,11 @@ databaseChangeLog:
       file: classpath:db/changelog/001a-create-player-table.sql
   - include:
       file: classpath:db/changelog/002a-create-game-table.sql
+  - include:
+      file: classpath:db/changelog/003a-delete-duplicate-players.sql
+  - include:
+      file: classpath:db/changelog/004a-alter-player-table-unique-name.sql
+  - include:
+      file: classpath:db/changelog/005a-set-is-in-game-default.sql
+  - include:
+      file: classpath:db/changelog/006a-add-not-null-is-in-game.sql
