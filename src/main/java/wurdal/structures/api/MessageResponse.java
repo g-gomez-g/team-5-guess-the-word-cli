@@ -1,4 +1,4 @@
 package wurdal.structures.api;
 
-public record MessageResponse(String message) {
+public record MessageResponse(String message) implements ApiResponse {
 }

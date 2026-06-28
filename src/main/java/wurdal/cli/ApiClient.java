@@ -1,23 +1,17 @@
 package wurdal.cli;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import wurdal.structures.api.AuthResponse;
-import wurdal.structures.api.CredentialsRequest;
-import wurdal.structures.api.ErrorResponse;
-import wurdal.structures.api.MessageResponse;
-import wurdal.structures.api.BoardRes;
-import wurdal.structures.api.GuessReq;
+import org.springframework.http.*;
+import org.springframework.web.client.RestTemplate;
+import wurdal.structures.api.*;
 
-import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.util.Optional;
 
 
 public class ApiClient {
-    private static final String SESSION_HEADER = "X-Session-Id";
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient client = HttpClient.newHttpClient();
     private final String baseUrl;
@@ -26,59 +20,140 @@ public class ApiClient {
         this.baseUrl = System.getenv().getOrDefault("WURDAL_SERVER_URL", "http://localhost:8080");
     }
 
-    public AuthResponse register(String username, String password) {
-        return sendJson("POST", "/register", null, new CredentialsRequest(username, password), AuthResponse.class);
+    // example payload {"name": "Alice"}
+    public RegisterRes register(String username) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<RegisterReq> entity = new HttpEntity<>(new RegisterReq(username), headers);
+        ResponseEntity<RegisterRes> response = restTemplate.exchange(
+                baseUrl + "/player",
+                HttpMethod.POST,
+                entity,
+                RegisterRes.class
+        );
+        return response.getBody();
     }
 
     public AuthResponse login(String username, String password) {
-        return sendJson("POST", "/login", null, new CredentialsRequest(username, password), AuthResponse.class);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<CredentialsRequest> entity = new HttpEntity<>(new CredentialsRequest(username, password), headers);
+        ResponseEntity<AuthResponse> response = restTemplate.exchange(
+                baseUrl + "/session",
+                HttpMethod.POST,
+                entity,
+                AuthResponse.class
+        );
+        return response.getBody();
     }
 
     public MessageResponse logout(String sessionId) {
-        return sendJson("POST", "/logout", sessionId, null, MessageResponse.class);
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<MessageResponse> response = restTemplate.exchange(
+                baseUrl + "/session" + "/" + sessionId,
+                HttpMethod.GET,
+                entity,
+                MessageResponse.class
+        );
+        return response.getBody();
     }
 
-    public BoardRes board(String sessionId) {
-        return sendJson("GET", "/board", sessionId, null, BoardRes.class);
+    public BoardRes newGame(String playerId) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<BoardRes> response = restTemplate.exchange(
+                baseUrl + "/new-game/" + playerId,
+                HttpMethod.POST,
+                entity,
+                BoardRes.class
+        );
+        return response.getBody();
     }
 
-    public BoardRes guess(String sessionId, String word) {
-        return sendJson("POST", "/guess", sessionId, new GuessReq(word), BoardRes.class);
+    public Board board(Integer playerId) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<Board> response = restTemplate.exchange(
+                baseUrl + "/" + playerId + "/board",
+                HttpMethod.GET,
+                entity,
+                Board.class
+        );
+        return response.getBody();
     }
 
-    private <T> T sendJson(String method, String path, String sessionId, Object requestBody, Class<T> responseType) {
-        try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + path))
-                    .header("Content-Type", "application/json");
+    public Board board(String sessionId) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<Board> response = restTemplate.exchange(
+                baseUrl + "/board",
+                HttpMethod.GET,
+                entity,
+                Board.class
+        );
+        return response.getBody();
+    }
 
-            if (sessionId != null && !sessionId.isBlank()) {
-                builder.header(SESSION_HEADER, sessionId);
-            }
+    public Board guess(String playerId, String word) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<GuessReq> entity = new HttpEntity<>(new GuessReq(word), headers);
+        ResponseEntity<Board> response = restTemplate.exchange(
+                baseUrl + "/" + playerId + "/guess",
+                HttpMethod.POST,
+                entity,
+                Board.class
+        );
+        return response.getBody();
+    }
 
-            if ("GET".equalsIgnoreCase(method)) {
-                builder.GET();
-            } else {
-                String body = requestBody == null ? "" : mapper.writeValueAsString(requestBody);
-                builder.method(method, HttpRequest.BodyPublishers.ofString(body));
-            }
+    public LeaderBoard leaderboard() {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<LeaderBoard> response = restTemplate.exchange(
+                baseUrl + "/leaderboard",
+                HttpMethod.GET,
+                entity,
+                LeaderBoard.class
+        );
+        return response.getBody();
+    }
 
-            HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-            int status = response.statusCode();
-            String body = response.body() == null ? "" : response.body();
-            if (status >= 200 && status < 300) {
-                if (responseType == MessageResponse.class && body.isBlank()) {
-                    return responseType.cast(new MessageResponse("Successfully logged out"));
-                }
-                return mapper.readValue(body, responseType);
-            }
-            throw toApiException(status, body);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to call server at " + baseUrl, e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Server request interrupted", e);
-        }
+    public Links links() {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        SessionStore.getInstance().read().ifPresent(headers::setBearerAuth);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<Links> response = restTemplate.exchange(
+                baseUrl + "/",
+                HttpMethod.GET,
+                entity,
+                Links.class
+        );
+        return response.getBody();
+    }
+
+    public Integer getId(String playerName) {
+        RestTemplate restTemplate = new RestTemplate();
+        JsonNode response = restTemplate.getForObject(
+                baseUrl + "/getId/" + playerName,
+                JsonNode.class
+        );
+        return (response != null && response.has("id"))? response.get("id").asInt() : null;
     }
 
     private ApiException toApiException(int statusCode, String responseBody) {

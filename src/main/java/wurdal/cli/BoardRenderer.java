@@ -5,6 +5,7 @@ import wurdal.structures.api.BoardRes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 public final class BoardRenderer {
     private static final int WORD_LENGTH = 5;
@@ -22,13 +23,17 @@ public final class BoardRenderer {
 
     public static void print(BoardRes board) {
         String topBottomRow = buildRow(WORD_LENGTH, CELL_BORDER);
-        List<String> guessList = board.guesses() == null ? List.of() : new ArrayList<>(board.guesses());
+        List<String> guessList = new ArrayList<>();
+        for (BoardRes.Guess guess : board.currentGuesses().guesses()) {
+            String word = guess.letters().stream().map(l -> String.valueOf(l.letter())).collect(Collectors.joining());
+            guessList.add(word);
+        }
 
         for (int row = 0; row < BOARD_ROWS; row++) {
             System.out.println(ANSI_BLUE + topBottomRow + ANSI_RESET);
             if (row < guessList.size()) {
                 String guess = guessList.get(row);
-                String[] colorCodes = evaluateGuessColors(board.hiddenWord(), guess);
+                String[] colorCodes = evaluateGuessColors(board.currentGuesses().result().word(), guess);
                 StringJoiner guessRow = new StringJoiner("  ");
                 for (int col = 0; col < WORD_LENGTH; col++) {
                     if (col < guess.length()) {

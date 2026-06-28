@@ -2,9 +2,8 @@ package wurdal.cli;
 
 import java.util.Locale;
 import java.util.Optional;
-import wurdal.structures.api.AuthResponse;
-import wurdal.structures.api.BoardRes;
-import wurdal.structures.api.MessageResponse;
+
+import wurdal.structures.api.*;
 import wurdal.cli.ApiClient.ApiException;
 
 public class WurdalCli {
@@ -54,9 +53,9 @@ public class WurdalCli {
         }
         String username = args[1].trim();
         String password = passwordReader.readPassword(username);
-        AuthResponse response = apiClient.register(username, password);
+        RegisterRes response = apiClient.register(username);
         sessionStore.write(response.sessionId());
-        printBoardResponse(response.board(), response.board().playerName());
+        //printBoardResponse(response.board(), response.board().playerName());
         return 0;
     }
 
@@ -69,7 +68,14 @@ public class WurdalCli {
         String password = passwordReader.readPassword(username);
         AuthResponse response = apiClient.login(username, password);
         sessionStore.write(response.sessionId());
-        printBoardResponse(response.board(), response.board().playerName());
+        //Maybe sessionId should be renamed to Token
+        //wasn't the playerId here?
+        Board boardResponse = apiClient.board(response.sessionId());
+        if (boardResponse instanceof BoardResError) {
+            return 1;
+        }
+        BoardRes res = (BoardRes) boardResponse;
+        printBoardResponse(res, res.user().name());
         return 0;
     }
 
@@ -91,8 +97,15 @@ public class WurdalCli {
             System.out.println("Please login to continue");
             return 1;
         }
-        BoardRes response = apiClient.board(session.get());
-        printBoardResponse(response, response.playerName());
+        Board response = apiClient.board(session.get());
+        if (response instanceof BoardResError) {
+            return 1;
+        }
+        BoardRes res = (BoardRes)response;
+        if (res.user() == null) {
+            return 1;
+        }
+        printBoardResponse(res, res.user().name());
         return 0;
     }
 
@@ -107,8 +120,12 @@ public class WurdalCli {
             return 1;
         }
         String guessWord = args[1].trim();
-        BoardRes response = apiClient.guess(session.get(), guessWord);
-        printBoardResponse(response, response.playerName());
+        Board response = apiClient.guess(session.get(), guessWord);
+        if (response instanceof BoardResError) {
+            return 1;
+        }
+        BoardRes res = (BoardRes)response;
+        printBoardResponse(res, res.user().name());
         return 0;
     }
 

@@ -10,10 +10,15 @@ import java.util.Optional;
 
 //Could save this in a system register instead
 public class SessionStore {
+    private static final SessionStore INSTANCE = new SessionStore();
     private final Path sessionFile;
 
-    public SessionStore() {
+    private SessionStore() {
         this.sessionFile = Paths.get(System.getProperty("user.home"), ".wurdal", "session-id");
+    }
+
+    public static SessionStore getInstance() {
+        return INSTANCE;
     }
 
     public Optional<String> read() {
