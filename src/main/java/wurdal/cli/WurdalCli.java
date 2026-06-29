@@ -9,16 +9,16 @@ import wurdal.cli.ApiClient.ApiException;
 public class WurdalCli {
     private final ApiClient apiClient;
     private final SessionStore sessionStore;
-    private final PasswordReader passwordReader;
+//    private final PasswordReader passwordReader;
 
     public WurdalCli() {
-        this(new ApiClient(), SessionStore.getInstance(), new PasswordReader());
+        this(new ApiClient(), SessionStore.getInstance());
     }
 
-    WurdalCli(ApiClient apiClient, SessionStore sessionStore, PasswordReader passwordReader) {
+    WurdalCli(ApiClient apiClient, SessionStore sessionStore) {
         this.apiClient = apiClient;
         this.sessionStore = sessionStore;
-        this.passwordReader = passwordReader;
+//        this.passwordReader = passwordReader;
     }
 
     public int run(String[] args) {
@@ -58,7 +58,7 @@ public class WurdalCli {
             sessionStore.write(response.sessionId());
         }
         System.out.println(response);
-        //printBoardResponse(response.board(), response.board().playerName());
+//        printBoardResponse(response.board(), response.board().playerName());
         return 0;
     }
 
@@ -68,8 +68,7 @@ public class WurdalCli {
             return 1;
         }
         String username = args[1].trim();
-        String password = passwordReader.readPassword(username);
-        AuthResponse response = apiClient.login(username, password);
+        AuthResponse response = apiClient.login(username);
         SessionStore.getInstance().write(response.sessionId());
         //Maybe sessionId should be renamed to Token
         //wasn't the playerId here?
