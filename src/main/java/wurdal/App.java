@@ -2,42 +2,23 @@ package wurdal;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import wurdal.command.CommandLineParser;
-import wurdal.game.GameEngine;
-import wurdal.persistence.FileBasedPersistence;
-import wurdal.persistence.PersistenceLayer;
+import wurdal.cli.WurdalCli;
 
 /**
  * Main entry point for the Wordle CLI application.
  *
- * Sets up dependency injection:
- * - PersistenceLayer: File-based storage (can be swapped for DB, JSON, etc.)
- * - CommandLineParser: CLI command routing
- * - GameEngine: Core game logic
+ * - With CLI args (register, login, guess, etc.): runs as CLI client
+ * - Without args or with Spring flags (--): starts the Spring Boot server
  */
 @SpringBootApplication
 public class App {
 
     public static void main(String[] args) {
-        SpringApplication.run(App.class, args);
-    }
-
-    private static void runCLI(String[] args) {
-        PersistenceLayer persistence = new FileBasedPersistence();
-        CommandLineParser parser = new CommandLineParser();
-        GameEngine game = new GameEngine(parser, persistence);
-
-        String commandLine = String.join(" ", args);
-        game.parser.Parse(game, commandLine);
-        System.exit(0);
-    }
-
-    private static boolean hasSpringArgs(String[] args) {
-        for (String arg : args) {
-            if (arg.startsWith("--") || arg.startsWith("-D")) {
-                return true;
-            }
+        if (args.length > 0 && !args[0].startsWith("--")) {
+            WurdalCli cli = new WurdalCli();
+            System.exit(cli.run(args));
+        } else {
+            SpringApplication.run(App.class, args);
         }
-        return false;
     }
 }
