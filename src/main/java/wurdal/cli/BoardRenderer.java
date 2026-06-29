@@ -24,11 +24,16 @@ public final class BoardRenderer {
     public static void print(BoardRes board) {
         String topBottomRow = buildRow(WORD_LENGTH, CELL_BORDER);
         List<String> guessList = new ArrayList<>();
+        if (board.currentGuesses() == null || board.currentGuesses().result() == null || board.currentGuesses().result().word() == null) {
+            System.out.println("bad board response");
+        }
+
         for (BoardRes.Guess guess : board.currentGuesses().guesses()) {
             String word = guess.letters().stream().map(l -> String.valueOf(l.letter())).collect(Collectors.joining());
             guessList.add(word);
         }
 
+        String word = board.currentGuesses().result().word();
         for (int row = 0; row < BOARD_ROWS; row++) {
             System.out.println(ANSI_BLUE + topBottomRow + ANSI_RESET);
             if (row < guessList.size()) {
@@ -70,6 +75,10 @@ public final class BoardRenderer {
     }
 
     private static String[] evaluateGuessColors(String hiddenWord, String guess) {
+        if (hiddenWord == null) {
+            System.out.println("null hiddenWord");
+            return new String[1];
+        }
         String normalizedHiddenWord = hiddenWord.toLowerCase();
         String normalizedGuess = guess.toLowerCase();
         String[] colorCodes = new String[WORD_LENGTH];
