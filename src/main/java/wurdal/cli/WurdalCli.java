@@ -9,7 +9,6 @@ import wurdal.cli.ApiClient.ApiException;
 public class WurdalCli {
     private final ApiClient apiClient;
     private final SessionStore sessionStore;
-//    private final PasswordReader passwordReader;
 
     public WurdalCli() {
         this(new ApiClient(), SessionStore.getInstance());
@@ -18,7 +17,6 @@ public class WurdalCli {
     WurdalCli(ApiClient apiClient, SessionStore sessionStore) {
         this.apiClient = apiClient;
         this.sessionStore = sessionStore;
-//        this.passwordReader = passwordReader;
     }
 
     public int run(String[] args) {
@@ -52,13 +50,12 @@ public class WurdalCli {
             return 1;
         }
         String username = args[1].trim();
-        //String password = passwordReader.readPassword(username);
         RegisterRes response = apiClient.register(username);
         if (response.sessionId() != null) {
             sessionStore.write(response.sessionId());
         }
         System.out.println(response);
-//        printBoardResponse(response.board(), response.board().playerName());
+        //printBoardResponse(response.board(), response.board().playerName());
         return 0;
     }
 

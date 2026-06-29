@@ -4,12 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import wurdal.cli.WurdalCli;
 
-/**
- * Main entry point for the Wordle CLI application.
- *
- * - With CLI args (register, login, guess, etc.): runs as CLI client
- * - Without args or with Spring flags (--): starts the Spring Boot server
- */
+/** * Main entry point for the Wordle CLI application. * * - With CLI args (register, login, guess, etc.): runs as CLI client * - Without args or with Spring flags (--): starts the Spring Boot server */
 @SpringBootApplication
 public class App {
 
