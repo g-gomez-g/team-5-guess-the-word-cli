@@ -3,6 +3,7 @@ package wurdal.cli;
 import java.util.Locale;
 import java.util.Optional;
 
+import wurdal.structures.Player;
 import wurdal.structures.api.*;
 import wurdal.cli.ApiClient.ApiException;
 
@@ -33,6 +34,8 @@ public class WurdalCli {
                 case "logout" -> handleLogout();
                 case "board" -> handleBoard();
                 case "guess" -> handleGuess(args);
+                case "leaderboard" -> handleLeaderboard();
+                case "new-game" -> handleNewGame();
                 default -> unknownCommand(command);
             };
         } catch (ApiException e) {
@@ -42,6 +45,17 @@ public class WurdalCli {
             System.err.println(e.getMessage());
              return 3;
         }
+    }
+
+    private int handleNewGame() {
+        return 0;
+    }
+    private int handleLeaderboard() {
+        LeaderBoard leaderBoard = apiClient.leaderboard();
+        leaderBoard.players().forEach(p -> {
+           System.out.println(p.getName() + " with " + p.getGamesWon() + " wins, " + p.getGamesLost() + " losses, average " + p.getAverageGuesses() + " guesses");
+        });
+        return 0;
     }
 
     private int handleRegister(String[] args) {
@@ -89,9 +103,7 @@ public class WurdalCli {
             System.out.println("Please login to continue");
             return 1;
         }
-//        MessageResponse response = apiClient.logout(session.get());
         sessionStore.clear();
-//        System.out.println(response.message());
         return 0;
     }
 
