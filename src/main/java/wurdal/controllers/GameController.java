@@ -30,7 +30,7 @@ public record GameController(PlayerRepository playerRepo, GameRepository gameRep
     static final String GUESS_ENDPOINT = "/{playerId}/guess";
     static final String BOARD_ENDPOINT = "/{playerId}/board";
     static final String LOGIN_ENDPOINT = "/sessions";
-    static final String LOGOUT_ENDPOINT = "";
+    static final String LOGOUT_ENDPOINT = ""; //not using one rn
     static final String LEADERBOARD_ENDPOINT = "/leaderboard";
 
     static final String[] GUESS_ENDPOINT_LINKS = {GUESS_ENDPOINT, BOARD_ENDPOINT};
@@ -63,6 +63,14 @@ public record GameController(PlayerRepository playerRepo, GameRepository gameRep
                     String href = BOARD_ENDPOINT.substring(0, BOARD_ENDPOINT.indexOf("{")) + player.getId() + BOARD_ENDPOINT.substring(BOARD_ENDPOINT.indexOf("}")+1, BOARD_ENDPOINT.length());
                     boardLink = new Links.Board(href);
                 }
+                case LOGIN_ENDPOINT -> {
+                    String href = LOGIN_ENDPOINT.substring(0, LOGIN_ENDPOINT.indexOf("{")) + player.getId() + LOGIN_ENDPOINT.substring(LOGIN_ENDPOINT.indexOf("}")+1, LOGIN_ENDPOINT.length());
+                    loginLink = new Links.Login(href);
+                }
+                case LEADERBOARD_ENDPOINT -> {
+                    String href = LEADERBOARD_ENDPOINT;
+                    leaderboardLink = new Links.Leaderboard(href);
+                }
             }
         }
 
@@ -91,6 +99,14 @@ public record GameController(PlayerRepository playerRepo, GameRepository gameRep
                 case BOARD_ENDPOINT -> {
                     String href = BOARD_ENDPOINT;
                     boardLink = new Links.Board(href);
+                }
+                case LOGIN_ENDPOINT -> {
+                    String href = LOGIN_ENDPOINT;
+                    loginLink = new Links.Login(href);
+                }
+                case LEADERBOARD_ENDPOINT -> {
+                    String href = LEADERBOARD_ENDPOINT;
+                    leaderboardLink = new Links.Leaderboard(href);
                 }
             }
         }
