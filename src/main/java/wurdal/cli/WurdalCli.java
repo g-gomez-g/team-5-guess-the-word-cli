@@ -89,13 +89,13 @@ public class WurdalCli {
             return 1;
         }
         String username = args[1].trim();
-        AuthResponse response = apiClient.login(username);
-        SessionStore.getInstance().write(response.sessionId());
-        //Maybe sessionId should be renamed to Token
-        //wasn't the playerId here?
-        Board boardResponse = apiClient.board();
+            AuthResponse response = apiClient.login(username);
+            SessionStore.getInstance().write(response.sessionId());
+            //Maybe sessionId should be renamed to Token
+            //wasn't the playerId here?
+            Board boardResponse = apiClient.board();
         if (boardResponse instanceof BoardResError) {
-            return 1;
+            throw new ApiException(401, (BoardResError)boardResponse);
         }
         BoardRes res = (BoardRes) boardResponse;
         if (res.user() != null) {
@@ -165,13 +165,15 @@ public class WurdalCli {
         BoardRenderer.print(response);
     }
 
-    private void printApiError(ApiException exception) {
-        if (exception.statusCode() == 401) {
-            sessionStore.clear();
+    private void printApiError(ApiException ex) {
+        if (ex.error() instanceof GenError) {
+            System.out.println(((GenError) ex.error()).description());
         }
-        System.out.println(exception.error().message());
-        if (exception.error().registerCommand() != null && !exception.error().registerCommand().isBlank()) {
-            System.out.println(exception.error().registerCommand());
+        else if (ex.error() instanceof BoardResError) {
+            System.out.println(((BoardResError) ex.error()).error().description());
+        }
+        else if (ex.error() instanceof wurdal.structures.api.ErrorResponse) {
+            System.out.println(((ErrorResponse) ex.error()).message());
         }
     }
 }

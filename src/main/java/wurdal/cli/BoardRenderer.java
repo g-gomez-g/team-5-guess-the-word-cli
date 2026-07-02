@@ -57,7 +57,9 @@ public final class BoardRenderer {
             }
         }
 
-        if (board.currentGuesses().guesses().size() >= 6) {
+        if (board.currentGuesses().result().status().equals("won")) {
+            System.out.println("You win!");
+        } else if (board.currentGuesses().result().status().equals("lose")) {
             System.out.println("Too bad, the word was " + board.currentGuesses().result().word());
         }
     }

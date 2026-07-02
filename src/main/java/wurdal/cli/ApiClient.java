@@ -184,10 +184,9 @@ public class ApiClient {
 
     public static class ApiException extends RuntimeException {
         private final int statusCode;
-        private final ErrorResponse error;
+        private final ApiError error;
 
-        public ApiException(int statusCode, ErrorResponse error) {
-            super(error.message());
+        public ApiException(int statusCode, ApiError error) {
             this.statusCode = statusCode;
             this.error = error;
         }
@@ -196,7 +195,7 @@ public class ApiClient {
             return statusCode;
         }
 
-        public ErrorResponse error() {
+        public ApiError error() {
             return error;
         }
     }
