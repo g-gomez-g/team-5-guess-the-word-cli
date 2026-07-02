@@ -3,6 +3,8 @@ package wurdal.cli;
 import java.util.Locale;
 import java.util.Optional;
 
+import org.springframework.web.client.RestClientException;
+import wurdal.structures.Player;
 import wurdal.structures.api.*;
 import wurdal.cli.ApiClient.ApiException;
 
@@ -33,6 +35,7 @@ public class WurdalCli {
                 case "logout" -> handleLogout();
                 case "board" -> handleBoard();
                 case "guess" -> handleGuess(args);
+                case "leaderboard" -> handleLeaderboard();
                 default -> unknownCommand(command);
             };
         } catch (ApiException e) {
@@ -41,6 +44,27 @@ public class WurdalCli {
         } catch (RuntimeException e) {
             System.err.println(e.getMessage());
              return 3;
+        }
+    }
+
+    private int handleLeaderboard() {
+        try {
+            LeaderBoard leaderBoard = apiClient.leaderboard();
+            if (leaderBoard.players() == null || leaderBoard.players().isEmpty()) {
+                System.out.println("No players on the leaderboard yet. Be the first to register!");
+                return 0;
+            }
+
+            leaderBoard.players().forEach(p ->
+                    System.out.println(
+                            p.getName() + " with " + p.getGamesWon() + " wins, " +
+                                    p.getGamesLost() + " losses, average " + p.getAverageGuesses() + " guesses"
+                    )
+            );
+            return 0;
+        } catch (RestClientException e) {
+            System.out.println("Looks like the wurdal servers are taking a loss... try again later!");
+            return 2;
         }
     }
 
@@ -89,9 +113,7 @@ public class WurdalCli {
             System.out.println("Please login to continue");
             return 1;
         }
-//        MessageResponse response = apiClient.logout(session.get());
         sessionStore.clear();
-//        System.out.println(response.message());
         return 0;
     }
 
