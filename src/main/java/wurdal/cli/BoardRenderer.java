@@ -8,7 +8,6 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 public final class BoardRenderer {
-    private static final int WORD_LENGTH = 5;
     private static final int BOARD_ROWS = 6;
     private static final String CELL_BORDER = "*****";
     private static final String ANSI_RESET = "\u001B[0m";
@@ -22,7 +21,6 @@ public final class BoardRenderer {
     }
 
     public static void print(BoardRes board) {
-        String topBottomRow = buildRow(WORD_LENGTH, CELL_BORDER);
         List<String> guessList = new ArrayList<>();
         if (board.currentGuesses() == null || board.currentGuesses().result() == null || board.currentGuesses().result().word() == null) {
             System.out.println("bad board response");
@@ -34,13 +32,15 @@ public final class BoardRenderer {
         }
 
         String word = board.currentGuesses().result().word();
+        String topBottomRow = buildRow(word.length(), CELL_BORDER);
+
         for (int row = 0; row < BOARD_ROWS; row++) {
             System.out.println(ANSI_BLUE + topBottomRow + ANSI_RESET);
             if (row < guessList.size()) {
                 String guess = guessList.get(row);
                 String[] colorCodes = evaluateGuessColors(board.currentGuesses().result().word(), guess);
                 StringJoiner guessRow = new StringJoiner("  ");
-                for (int col = 0; col < WORD_LENGTH; col++) {
+                for (int col = 0; col < word.length(); col++) {
                     if (col < guess.length()) {
                         guessRow.add(buildColoredCell(guess.charAt(col), colorCodes[col]));
                     } else {
@@ -49,7 +49,7 @@ public final class BoardRenderer {
                 }
                 System.out.println(guessRow);
             } else {
-                System.out.println(buildRow(WORD_LENGTH, CELL_EMPTY));
+                System.out.println(buildRow(word.length(), CELL_EMPTY));
             }
             System.out.println(ANSI_BLUE + topBottomRow + ANSI_RESET);
             if (row < BOARD_ROWS - 1) {
@@ -83,7 +83,7 @@ public final class BoardRenderer {
         }
         String normalizedHiddenWord = hiddenWord.toLowerCase();
         String normalizedGuess = guess.toLowerCase();
-        String[] colorCodes = new String[WORD_LENGTH];
+        String[] colorCodes = new String[hiddenWord.length()];
         int[] letterCounts = new int[26];
 
         for (int i = 0; i < normalizedHiddenWord.length(); i++) {
@@ -93,7 +93,7 @@ public final class BoardRenderer {
             }
         }
 
-        for (int i = 0; i < WORD_LENGTH; i++) {
+        for (int i = 0; i < hiddenWord.length(); i++) {
             if (i >= normalizedGuess.length()) {
                 colorCodes[i] = ANSI_RESET;
                 continue;
@@ -110,7 +110,7 @@ public final class BoardRenderer {
             }
         }
 
-        for (int i = 0; i < WORD_LENGTH; i++) {
+        for (int i = 0; i < hiddenWord.length(); i++) {
             if (i >= normalizedGuess.length()) {
                 continue;
             }
